@@ -1,4 +1,5 @@
 import 'package:check_out/core/widgets/custom_app_bar.dart';
+import 'package:check_out/core/widgets/main_buttom.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_credit_card/flutter_credit_card.dart';
 
@@ -14,15 +15,46 @@ class PaymentDetails extends StatelessWidget {
   }
 }
 
-class PaymentDetailsBody extends StatelessWidget {
-  const PaymentDetailsBody({super.key});
+class PaymentDetailsBody extends StatefulWidget {
+  PaymentDetailsBody({super.key});
+
+  @override
+  State<PaymentDetailsBody> createState() => _PaymentDetailsBodyState();
+}
+
+class _PaymentDetailsBodyState extends State<PaymentDetailsBody> {
+  final GlobalKey<FormState> formKey = GlobalKey();
+
+  AutovalidateMode autovalidateMode = AutovalidateMode.disabled;
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [PaymentMethodsListView(), CustomCreditCard()],
-      ),
+    return CustomScrollView(
+      slivers: [
+        const SliverToBoxAdapter(child: PaymentMethodsListView()),
+        SliverToBoxAdapter(
+            child: CustomCreditCard(
+          autovalidateMode: autovalidateMode,
+          formKey: formKey,
+        )),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: MainBottom(
+              title: "Payment",
+              onTap: () {
+                if (formKey.currentState!.validate()) {
+                  formKey.currentState!.save();
+                } else {
+                  autovalidateMode = AutovalidateMode.always;
+                  setState(() {});
+                }
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -38,20 +70,20 @@ class PaymentMethodItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: Duration(microseconds: 600),
+      duration: const Duration(microseconds: 600),
       width: 103,
       height: 62,
       decoration: ShapeDecoration(
           shape: RoundedRectangleBorder(
               side: BorderSide(
                   width: 1.5,
-                  color: isActive ? Color(0xff34A853) : Colors.grey),
+                  color: isActive ? const Color(0xff34A853) : Colors.grey),
               borderRadius: BorderRadius.circular(15)),
           shadows: [
             BoxShadow(
-                color: isActive ? Color(0xff34A853) : Colors.grey,
+                color: isActive ? const Color(0xff34A853) : Colors.grey,
                 blurRadius: 4,
-                offset: Offset(0, 0),
+                offset: const Offset(0, 0),
                 spreadRadius: 0)
           ]),
       child: Container(
@@ -110,8 +142,10 @@ class _PaymentMethodsListViewState extends State<PaymentMethodsListView> {
 }
 
 class CustomCreditCard extends StatefulWidget {
-  const CustomCreditCard({super.key});
-
+  const CustomCreditCard(
+      {super.key, required this.formKey, required this.autovalidateMode});
+  final GlobalKey<FormState> formKey;
+  final AutovalidateMode autovalidateMode;
   @override
   State<CustomCreditCard> createState() => _CustomCreditCardState();
 }
@@ -120,7 +154,6 @@ class _CustomCreditCardState extends State<CustomCreditCard> {
   String cardNumber = '', expiryDate = '', cardHolderName = '', cvvCode = '';
 
   bool showBackView = false;
-  final GlobalKey<FormState> formKey = GlobalKey();
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -131,9 +164,12 @@ class _CustomCreditCardState extends State<CustomCreditCard> {
           cardHolderName: cardHolderName,
           cvvCode: cvvCode,
           showBackView: showBackView,
+          isHolderNameVisible: true,
+          cardType: CardType.visa,
           onCreditCardWidgetChange: (p0) {},
         ),
         CreditCardForm(
+            autovalidateMode: widget.autovalidateMode,
             cardNumber: cardNumber,
             expiryDate: expiryDate,
             cardHolderName: cardHolderName,
@@ -144,9 +180,10 @@ class _CustomCreditCardState extends State<CustomCreditCard> {
               cvvCode = creditCardModel.cvvCode;
               cardNumber = creditCardModel.cardNumber;
               showBackView = creditCardModel.isCvvFocused;
+
               setState(() {});
             },
-            formKey: formKey)
+            formKey: widget.formKey)
       ],
     );
   }
